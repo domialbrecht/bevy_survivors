@@ -7,6 +7,7 @@ use rand::Rng;
 
 use crate::{
     AppSystems,
+    animation::{AnimationIndices, AnimationTimer},
     gameplay::{
         Health, Speed,
         enemy::{
@@ -67,6 +68,7 @@ pub(crate) struct ShooterProjectileHitEvent {
 fn spawn_shooter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     player_query: Query<&Transform, With<Player>>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
     shooter_q: Query<&Shooter>,
@@ -84,15 +86,26 @@ fn spawn_shooter(
     let mut shooter_count = shooter_q.iter().count();
     shooter_count += 1;
 
+    let texture = asset_server.load("enemies/necromancer_.png");
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(24), 8, 5, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    // Use only the subset of sprites in the sheet that make up the run animation
+    let animation_indices = AnimationIndices { first: 0, last: 3 };
+
     commands.spawn((
         Name::new(format!("Shooter {shooter_count}")),
         Enemy,
         Shooter,
-        Sprite {
-            image: asset_server.load("enemies/shooter.png"),
-            ..default()
-        },
-        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.),
+        Sprite::from_atlas_image(
+            texture,
+            TextureAtlas {
+                layout: texture_atlas_layout,
+                index: animation_indices.first,
+            },
+        ),
+        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.).with_scale(Vec3::splat(32.0 / 22.0)),
+        animation_indices,
+        AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
     ));
 
     Ok(())

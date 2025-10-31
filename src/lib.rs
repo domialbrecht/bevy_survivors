@@ -5,6 +5,7 @@ use bevy_seedling::prelude::*;
 use gameplay::player::Player;
 use screens::Screen;
 
+mod animation;
 mod audio;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -23,21 +24,23 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, update_camera.run_if(in_state(Screen::Gameplay)));
 
     app.add_plugins((
-        DefaultPlugins.set(WindowPlugin {
-            primary_window: Window {
-                title: "bevy survivor".to_string(),
-                fit_canvas_to_parent: true,
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Window {
+                    title: "bevy survivor".to_string(),
+                    fit_canvas_to_parent: true,
+                    ..default()
+                }
+                .into(),
                 ..default()
-            }
-            .into(),
-            ..default()
-        }),
+            })
+            .set(ImagePlugin::default_nearest()),
         EnhancedInputPlugin,
         EntropyPlugin::<WyRand>::default(),
         SeedlingPlugin::default(),
     ));
 
-    app.add_plugins((gameplay::plugin, audio::plugin));
+    app.add_plugins((animation::plugin, gameplay::plugin, audio::plugin));
 
     #[cfg(feature = "dev")]
     app.add_plugins(dev_tools::plugin);
@@ -66,6 +69,10 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Name::new("Camera"),
         Camera2d,
+        Projection::from(OrthographicProjection {
+            scale: 0.75,
+            ..OrthographicProjection::default_2d()
+        }),
         // Render all UI to this camera.
         // Not strictly necessary since we only use one camera,
         // but if we don't use this component, our UI will disappear as soon

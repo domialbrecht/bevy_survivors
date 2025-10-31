@@ -6,6 +6,7 @@ use rand::Rng;
 
 use crate::{
     AppSystems,
+    animation::{AnimationIndices, AnimationTimer},
     gameplay::{
         Health, Speed,
         enemy::{
@@ -68,6 +69,7 @@ pub(crate) struct SprinterAbilityHitEvent(pub Entity);
 fn spawn_sprinter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     player_query: Query<&Transform, With<Player>>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
     sprinter_q: Query<&Sprinter>,
@@ -85,15 +87,26 @@ fn spawn_sprinter(
     let mut sprinter_count = sprinter_q.iter().count();
     sprinter_count += 1;
 
+    let texture = asset_server.load("enemies/devil_.png");
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(28), 8, 6, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    // Use only the subset of sprites in the sheet that make up the run animation
+    let animation_indices = AnimationIndices { first: 0, last: 3 };
+
     commands.spawn((
         Name::new(format!("Shooter {sprinter_count}")),
         Enemy,
         Sprinter,
-        Sprite {
-            image: asset_server.load("enemies/sprinter.png"),
-            ..default()
-        },
-        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.),
+        Sprite::from_atlas_image(
+            texture,
+            TextureAtlas {
+                layout: texture_atlas_layout,
+                index: animation_indices.first,
+            },
+        ),
+        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.).with_scale(Vec3::splat(32.0 / 24.0)),
+        animation_indices,
+        AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
     ));
 
     Ok(())

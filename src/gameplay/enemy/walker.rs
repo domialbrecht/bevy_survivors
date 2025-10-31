@@ -6,6 +6,7 @@ use rand::Rng;
 
 use crate::{
     AppSystems,
+    animation::{AnimationIndices, AnimationTimer},
     gameplay::{
         Health, Speed,
         enemy::{DamageCooldown, Enemy, KnockbackDirection, Meele, SPAWN_RADIUS},
@@ -45,6 +46,7 @@ pub(crate) struct Walker;
 
 fn spawn_walker(
     mut commands: Commands,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     player_query: Query<&Transform, With<Player>>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
@@ -59,14 +61,25 @@ fn spawn_walker(
     let enemy_pos_x = player_pos.translation.x + offset_x;
     let enemy_pos_y = player_pos.translation.y + offset_y;
 
+    let texture = asset_server.load("enemies/skeleton_.png");
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(24), 7, 7, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    // Use only the subset of sprites in the sheet that make up the run animation
+    let animation_indices = AnimationIndices { first: 0, last: 3 };
+
     commands.spawn((
         Name::new("Default Enemy"),
         Walker,
-        Sprite {
-            image: asset_server.load("enemies/walker.png"),
-            ..default()
-        },
-        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.),
+        Sprite::from_atlas_image(
+            texture,
+            TextureAtlas {
+                layout: texture_atlas_layout,
+                index: animation_indices.first,
+            },
+        ),
+        Transform::from_xyz(enemy_pos_x, enemy_pos_y, 0.).with_scale(Vec3::splat(32.0 / 22.0)),
+        animation_indices,
+        AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
         DamageCooldown(Timer::from_seconds(0.5, TimerMode::Repeating)),
     ));
 
