@@ -70,7 +70,7 @@ fn spawn_camera(mut commands: Commands) {
         Name::new("Camera"),
         Camera2d,
         Projection::from(OrthographicProjection {
-            scale: 0.75,
+            scale: 0.5,
             ..OrthographicProjection::default_2d()
         }),
         // Render all UI to this camera.
